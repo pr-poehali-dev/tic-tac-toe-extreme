@@ -8,6 +8,7 @@ interface GamePageProps {
   player1: string;
   player2: string;
   onGameEnd: (match: MatchRecord) => void;
+  isAIMode?: boolean;
 }
 
 interface Cell {
@@ -16,7 +17,7 @@ interface Cell {
   value: 'X' | 'O';
 }
 
-const GamePage = ({ player1, player2, onGameEnd }: GamePageProps) => {
+const GamePage = ({ player1, player2, onGameEnd, isAIMode = false }: GamePageProps) => {
   const [cells, setCells] = useState<Cell[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<'X' | 'O'>('X');
   const [viewportOffset, setViewportOffset] = useState({ x: 0, y: 0 });
@@ -76,8 +77,88 @@ const GamePage = ({ player1, player2, onGameEnd }: GamePageProps) => {
     return false;
   };
 
+  const makeAIMove = (currentCells: Cell[]) => {
+    const calculateScore = (cells: Cell[], move: Cell, depth: number): number => {
+      const directions = [
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: 1, dy: 1 },
+        { dx: 1, dy: -1 },
+      ];
+
+      let maxScore = 0;
+      for (const { dx, dy } of directions) {
+        let count = 1;
+        let openEnds = 0;
+
+        for (let i = 1; i < 5; i++) {
+          const cell = cells.find(c => c.x === move.x + dx * i && c.y === move.y + dy * i);
+          if (!cell) {
+            openEnds++;
+            break;
+          }
+          if (cell.value === move.value) count++;
+          else break;
+        }
+
+        for (let i = 1; i < 5; i++) {
+          const cell = cells.find(c => c.x === move.x - dx * i && c.y === move.y - dy * i);
+          if (!cell) {
+            openEnds++;
+            break;
+          }
+          if (cell.value === move.value) count++;
+          else break;
+        }
+
+        const lineScore = count >= 5 ? 10000 : count === 4 ? 1000 : count === 3 ? 100 : count === 2 ? 10 : 1;
+        maxScore = Math.max(maxScore, lineScore * (openEnds + 1));
+      }
+
+      return maxScore;
+    };
+
+    const existingCells = currentCells.length > 0 ? currentCells : [{ x: 0, y: 0, value: 'X' }];
+    const allX = existingCells.map(c => c.x);
+    const allY = existingCells.map(c => c.y);
+    const minX = Math.min(...allX) - 2;
+    const maxX = Math.max(...allX) + 2;
+    const minY = Math.min(...allY) - 2;
+    const maxY = Math.max(...allY) + 2;
+
+    const candidates: Array<{ x: number; y: number; score: number }> = [];
+
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        if (currentCells.some(c => c.x === x && c.y === y)) continue;
+
+        const hasNeighbor = currentCells.some(
+          c => Math.abs(c.x - x) <= 2 && Math.abs(c.y - y) <= 2
+        );
+        if (!hasNeighbor && currentCells.length > 0) continue;
+
+        const aiMove: Cell = { x, y, value: 'O' };
+        const playerMove: Cell = { x, y, value: 'X' };
+
+        const aiScore = calculateScore([...currentCells, aiMove], aiMove, 0);
+        const blockScore = calculateScore([...currentCells, playerMove], playerMove, 0);
+
+        candidates.push({ x, y, score: aiScore * 1.2 + blockScore });
+      }
+    }
+
+    if (candidates.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    const topCandidates = candidates.slice(0, Math.min(3, candidates.length));
+    return topCandidates[Math.floor(Math.random() * topCandidates.length)];
+  };
+
   const handleCellClick = (x: number, y: number) => {
     if (winner) return;
+    if (isAIMode && currentPlayer === 'O') return;
     if (cells.some(c => c.x === x && c.y === y)) return;
 
     const newCell: Cell = { x, y, value: currentPlayer };
@@ -89,6 +170,16 @@ const GamePage = ({ player1, player2, onGameEnd }: GamePageProps) => {
       setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
     }
   };
+
+  useEffect(() => {
+    if (isAIMode && currentPlayer === 'O' && !winner) {
+      const timer = setTimeout(() => {
+        const aiMove = makeAIMove(cells);
+        handleCellClick(aiMove.x, aiMove.y);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPlayer, isAIMode, winner]);
 
   const handleReset = () => {
     setCells([]);

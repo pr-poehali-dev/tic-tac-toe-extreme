@@ -31,6 +31,7 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState<'login' | 'game' | 'history' | 'stats'>('login');
   const [players, setPlayers] = useState<{ player1: string; player2: string } | null>(null);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
+  const [isAIMode, setIsAIMode] = useState(false);
 
   useEffect(() => {
     const savedMatches = localStorage.getItem('tictactoe_matches');
@@ -48,8 +49,9 @@ const Index = () => {
     }
   }, []);
 
-  const handleLogin = (player1: string, player2: string) => {
+  const handleLogin = (player1: string, player2: string, aiMode: boolean) => {
     setPlayers({ player1, player2 });
+    setIsAIMode(aiMode);
     setCurrentPage('game');
   };
 
@@ -127,6 +129,7 @@ const Index = () => {
             player1={players.player1}
             player2={players.player2}
             onGameEnd={handleGameEnd}
+            isAIMode={isAIMode}
           />
         )}
         {currentPage === 'history' && (
