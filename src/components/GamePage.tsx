@@ -25,8 +25,8 @@ const GamePage = ({ player1, player2, onGameEnd, isAIMode = false }: GamePagePro
   const [winningLine, setWinningLine] = useState<Cell[]>([]);
   const [moves, setMoves] = useState<Array<{ x: number; y: number; player: 'X' | 'O' }>>([]);
 
-  const CELL_SIZE = 80;
-  const GRID_SIZE = 15;
+  const CELL_SIZE = 100;
+  const GRID_SIZE = 5;
 
   const checkWinner = (newCells: Cell[], lastMove: Cell): boolean => {
     const directions = [
@@ -192,23 +192,19 @@ const GamePage = ({ player1, player2, onGameEnd, isAIMode = false }: GamePagePro
 
   const renderGrid = () => {
     const gridCells = [];
-    const startX = Math.floor(viewportOffset.x / CELL_SIZE) - GRID_SIZE;
-    const startY = Math.floor(viewportOffset.y / CELL_SIZE) - GRID_SIZE;
 
-    for (let y = startY; y < startY + GRID_SIZE * 2; y++) {
-      for (let x = startX; x < startX + GRID_SIZE * 2; x++) {
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
         const cellData = cells.find(c => c.x === x && c.y === y);
         const isWinning = winningLine.some(c => c.x === x && c.y === y);
 
         gridCells.push(
           <div
             key={`${x},${y}`}
-            className={`absolute border border-purple-200 flex items-center justify-center text-3xl font-bold cursor-pointer transition-all hover:bg-purple-50 ${
+            className={`border border-purple-200 flex items-center justify-center text-4xl font-bold cursor-pointer transition-all hover:bg-purple-50 ${
               isWinning ? 'bg-gradient-to-br from-yellow-200 to-orange-200 animate-pulse-soft' : 'bg-white'
             }`}
             style={{
-              left: x * CELL_SIZE - viewportOffset.x,
-              top: y * CELL_SIZE - viewportOffset.y,
               width: CELL_SIZE,
               height: CELL_SIZE,
             }}
@@ -258,35 +254,8 @@ const GamePage = ({ player1, player2, onGameEnd, isAIMode = false }: GamePagePro
             </div>
           )}
 
-          <div className="relative w-full h-[600px] overflow-hidden rounded-lg border-4 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+          <div className="grid grid-cols-5 gap-0 w-fit mx-auto rounded-lg overflow-hidden border-4 border-purple-200">
             {renderGrid()}
-          </div>
-
-          <div className="mt-4 flex gap-2 justify-center">
-            <Button
-              variant="outline"
-              onClick={() => setViewportOffset(p => ({ x: p.x - CELL_SIZE * 3, y: p.y }))}
-            >
-              <Icon name="ChevronLeft" size={18} />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setViewportOffset(p => ({ x: p.x, y: p.y - CELL_SIZE * 3 }))}
-            >
-              <Icon name="ChevronUp" size={18} />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setViewportOffset(p => ({ x: p.x, y: p.y + CELL_SIZE * 3 }))}
-            >
-              <Icon name="ChevronDown" size={18} />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setViewportOffset(p => ({ x: p.x + CELL_SIZE * 3, y: p.y }))}
-            >
-              <Icon name="ChevronRight" size={18} />
-            </Button>
           </div>
         </Card>
 
